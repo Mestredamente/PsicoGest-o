@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Index from './pages/Index'
+import Patients from './pages/Patients'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 
@@ -14,8 +15,8 @@ const App = () => (
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Index />} />
+          <Route path="/pacientes" element={<Patients />} />
           {/* Missing routes will fallback to Dashboard or 404 naturally */}
-          <Route path="/pacientes" element={<NotFound />} />
           <Route path="/agenda" element={<NotFound />} />
           <Route path="/financeiro" element={<NotFound />} />
           <Route path="/configuracoes" element={<NotFound />} />
