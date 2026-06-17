@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Search, Plus } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Search, Plus, FileText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -19,15 +19,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { mockPatients, type Patient } from '@/lib/mock-data'
-import { PatientManagementDialog } from '@/components/patients/PatientManagementDialog'
+import { getPatients, type Patient } from '@/services/clinical'
+import { Link } from 'react-router-dom'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Patients() {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
+  const [patients, setPatients] = useState<Patient[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
+
+  const loadData = () => {
+    getPatients().then(setPatients).catch(console.error)
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('patients', () => {
+    loadData()
+  })
 
   const filteredPatients = useMemo(() => {
     return patients.filter((p) => {
@@ -36,25 +47,6 @@ export default function Patients() {
       return matchName && matchStatus
     })
   }, [patients, search, statusFilter])
-
-  const handleEdit = (p: Patient) => {
-    setEditingPatient(p)
-    setDialogOpen(true)
-  }
-
-  const handleNew = () => {
-    setEditingPatient(null)
-    setDialogOpen(true)
-  }
-
-  const handleSave = (patientData: Patient) => {
-    if (editingPatient) {
-      setPatients((prev) => prev.map((p) => (p.id === patientData.id ? patientData : p)))
-    } else {
-      setPatients((prev) => [{ ...patientData, id: Math.random().toString() }, ...prev])
-    }
-    setDialogOpen(false)
-  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 md:pb-0 animate-in fade-in duration-500">
@@ -65,7 +57,7 @@ export default function Patients() {
             Gerencie os cadastros e prontuários dos seus pacientes.
           </p>
         </div>
-        <Button onClick={handleNew} className="bg-cyan-900 hover:bg-cyan-800 text-white">
+        <Button className="bg-cyan-900 hover:bg-cyan-800 text-white" disabled>
           <Plus className="w-4 h-4 mr-2" /> Novo Paciente
         </Button>
       </header>
@@ -109,15 +101,10 @@ export default function Patients() {
           </TableHeader>
           <TableBody>
             {filteredPatients.map((p) => (
-              <TableRow
-                key={p.id}
-                className="hover:bg-slate-50/50 cursor-pointer"
-                onClick={() => handleEdit(p)}
-              >
+              <TableRow key={p.id} className="hover:bg-slate-50/50">
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border border-slate-200">
-                      <AvatarImage src={p.avatarUrl} />
                       <AvatarFallback className="bg-cyan-50 text-cyan-900">
                         {p.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
@@ -153,17 +140,16 @@ export default function Patients() {
                   {p.phone || '-'}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-cyan-900 hover:text-cyan-800 hover:bg-cyan-50"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEdit(p)
-                    }}
-                  >
-                    Gerenciar
-                  </Button>
+                  <Link to={`/pacientes/${p.id}/prontuario`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-cyan-900 hover:text-cyan-800 hover:bg-cyan-50"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Prontuário
+                    </Button>
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}
@@ -177,13 +163,6 @@ export default function Patients() {
           </TableBody>
         </Table>
       </div>
-
-      <PatientManagementDialog
-        isOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        patient={editingPatient}
-        onSave={handleSave}
-      />
     </div>
   )
 }
