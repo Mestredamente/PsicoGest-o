@@ -19,13 +19,17 @@ export default function Index() {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
+      year: 'numeric',
     }).format(new Date())
     return dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
   }, [])
 
   // Filter patients based on search
   const filteredPatients = useMemo(() => {
-    return mockPatients.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const filtered = mockPatients.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    return searchQuery ? filtered : filtered.slice(0, 5)
   }, [searchQuery])
 
   return (
@@ -36,9 +40,7 @@ export default function Index() {
           <p className="text-slate-500 font-medium tracking-wide text-sm uppercase">
             {formattedDate}
           </p>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
-            Bom dia, Dr. Rafael 👋
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Olá, Dr. Rafael 👋</h1>
         </div>
 
         <div className="relative w-full md:w-80">

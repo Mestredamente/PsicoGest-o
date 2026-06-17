@@ -8,16 +8,19 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Play } from 'lucide-react'
+import { Play, Check, ChevronsUpDown } from 'lucide-react'
 import type { Patient } from '@/lib/mock-data'
 import { toast } from '@/hooks/use-toast'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 
 interface NewSessionDialogProps {
   isOpen: boolean
@@ -27,6 +30,7 @@ interface NewSessionDialogProps {
 
 export function NewSessionDialog({ isOpen, onClose, patients }: NewSessionDialogProps) {
   const [selectedPatientId, setSelectedPatientId] = useState<string>('')
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   const handleStart = () => {
     if (!selectedPatientId) {
@@ -51,7 +55,15 @@ export function NewSessionDialog({ isOpen, onClose, patients }: NewSessionDialog
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setSelectedPatientId('')
+          onClose()
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl text-primary">Iniciar Nova Sessão</DialogTitle>
@@ -61,22 +73,60 @@ export function NewSessionDialog({ isOpen, onClose, patients }: NewSessionDialog
         </DialogHeader>
 
         <div className="py-6">
-          <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um paciente..." />
-            </SelectTrigger>
-            <SelectContent>
-              {patients.map((patient) => (
-                <SelectItem key={patient.id} value={patient.id}>
-                  {patient.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openCombobox}
+                className="w-full justify-between font-normal"
+              >
+                {selectedPatientId
+                  ? patients.find((p) => p.id === selectedPatientId)?.name
+                  : 'Buscar paciente...'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar paciente..." />
+                <CommandList>
+                  <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    {patients.map((patient) => (
+                      <CommandItem
+                        key={patient.id}
+                        value={patient.name}
+                        onSelect={() => {
+                          setSelectedPatientId(patient.id)
+                          setOpenCombobox(false)
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedPatientId === patient.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        {patient.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <DialogFooter className="sm:justify-end">
-          <Button variant="ghost" onClick={onClose} className="text-slate-500">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSelectedPatientId('')
+              onClose()
+            }}
+            className="text-slate-500"
+          >
             Cancelar
           </Button>
           <Button onClick={handleStart} className="gap-2" disabled={!selectedPatientId}>
